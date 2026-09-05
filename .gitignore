@@ -11,3 +11,5 @@ core/*.exe
 .tools
 .data
 *.tsbuildinfo
+resources/sidecar/
+.workbuddy/
