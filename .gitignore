@@ -13,3 +13,5 @@ core/*.exe
 *.tsbuildinfo
 resources/sidecar/
 .workbuddy/
+.cache
+dist2

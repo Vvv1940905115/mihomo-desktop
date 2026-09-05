@@ -1,0 +1,74 @@
+# ============================================================
+# Mihomo Desktop - electron-builder 打包配置
+# 目标平台：Windows 10/11 x64（放弃 Win7/8）
+# 产物格式：NSIS 安装向导（允许自定义安装目录）
+# ============================================================
+
+# 应用唯一标识（Windows 注册表 / 安装卸载信息用）
+appId: com.mihomo.client
+
+# 安装后显示的产品名称（开始菜单 / 桌面快捷方式名称）
+productName: Mihomo Desktop
+
+# 复用本地已安装的 Electron 运行时，避免打包时再次从 GitHub 下载
+electronDist: node_modules/electron/dist
+
+# 关闭自动发布（不配置 GitHub Token 时必须设为 null，否则打包末尾报错）
+publish: null
+
+# 产物输出目录
+directories:
+  output: dist
+
+# 打包进 app.asar 的文件（electron-vite 构建产物在 out/）
+files:
+  - out/**
+  - '!**/*.map'
+
+# 不打入 asar、直接复制到安装目录 resources/ 下的文件
+# 这里的 Go sidecar 必须放在 asar 外，因为不能从压缩包内 spawn exe
+extraResources:
+  - from: resources/sidecar/mihomo-service.exe
+    to: sidecar/mihomo-service.exe
+  - from: resources/icon.png
+    to: icon.png
+
+# 启用 asar 打包（减小体积、保护源码）
+asar: true
+
+# Windows 平台配置
+win:
+  # 程序 exe 图标（沿用原版 icon.ico，打包后用 rcedit 注入到 exe 本体）
+  icon: resources/icon.ico
+  # 关闭签名+编辑 exe 资源步骤，避免 winCodeSign 解压时的符号链接权限问题
+  # 程序 exe 图标改为打包后由 build-icon.ps1 调用 rcedit-x64.exe 手动注入
+  signAndEditExecutable: false
+  # 只构建 x64，不输出 32 位包；Electron 23+ 已不支持 Win7/8
+  target:
+    - target: nsis
+      arch:
+        - x64
+
+# NSIS 安装向导配置
+nsis:
+  # 安装向导语言：2052 = 简体中文（Windows LCID）
+  language: "2052"
+  # 关闭一键安装 → 弹出安装向导（必须）
+  oneClick: false
+  # 非所有用户安装（仅当前用户，无需 UAC 提权）
+  perMachine: false
+  # 允许用户在向导中点击"浏览"自由选择安装目录（D盘/E盘等）
+  allowToChangeInstallationDirectory: true
+  # 自动创建桌面快捷方式
+  createDesktopShortcut: true
+  # 自动创建开始菜单快捷方式
+  createStartMenuShortcut: true
+  # 快捷方式显示名称（桌面 / 开始菜单）
+  shortcutName: 灵核工坊
+  # 安装程序 exe 图标：与程序本体图标完全统一（沿用原版 icon.ico）
+  installerIcon: resources/icon.ico
+  # 安装包文件名
+  artifactName: ${productName} Setup ${version}.exe
+
+# 不重新构建原生模块（本项目无 native 依赖，跳过可加速打包）
+npmRebuild: false

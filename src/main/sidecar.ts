@@ -9,7 +9,11 @@ export function startSidecar(): void {
 
   // app.getAppPath() must be called after app is ready; resolve it here
   // instead of at module top-level so the main process can boot cleanly.
-  const SIDECAR_BIN = join(app.getAppPath(), 'resources', 'sidecar', 'mihomo-service.exe')
+  // 打包后 app.getAppPath() 指向 app.asar，无法从中 spawn exe；
+  // sidecar 由 extraResources 释放到 process.resourcesPath/sidecar/ 下。
+  const SIDECAR_BIN = app.isPackaged
+    ? join(process.resourcesPath, 'sidecar', 'mihomo-service.exe')
+    : join(app.getAppPath(), 'resources', 'sidecar', 'mihomo-service.exe')
 
   try {
     sidecarProcess = spawn(SIDECAR_BIN, [], {
