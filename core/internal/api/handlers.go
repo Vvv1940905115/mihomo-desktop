@@ -26,6 +26,10 @@ func (s *Server) handleGetProxy(w http.ResponseWriter, r *http.Request) {
 	s.mihomo.forward(w, r, "/proxies/"+r.PathValue("name"))
 }
 
+func (s *Server) handleProxyDelay(w http.ResponseWriter, r *http.Request) {
+	s.mihomo.forward(w, r, "/proxies/"+r.PathValue("name")+"/delay")
+}
+
 func (s *Server) handlePutProxy(w http.ResponseWriter, r *http.Request) {
 	s.mihomo.forward(w, r, "/proxies/"+r.PathValue("name"))
 }

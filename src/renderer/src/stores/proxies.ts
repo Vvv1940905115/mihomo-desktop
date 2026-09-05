@@ -42,5 +42,27 @@ export const useProxiesStore = defineStore('proxies', () => {
     }
   }
 
-  return { proxies, groups, loading, load, select }
+  const delays = ref<Record<string, number>>({})
+  const testingDelay = ref(false)
+
+  async function testAllDelays(): Promise<void> {
+    if (testingDelay.value) return
+    testingDelay.value = true
+    try {
+      const names = [...new Set(groups.value.flatMap((group) => group.all))]
+      const results = await Promise.allSettled(names.map((name) => getProxyDelay(name)))
+      const next: Record<string, number> = {}
+      names.forEach((name, index) => {
+        const result = results[index]
+        if (result.status === 'fulfilled' && result.value.delay > 0) {
+          next[name] = result.value.delay
+        }
+      })
+      delays.value = next
+    } finally {
+      testingDelay.value = false
+    }
+  }
+
+  return { proxies, groups, delays, testingDelay, loading, load, select, testAllDelays }
 })

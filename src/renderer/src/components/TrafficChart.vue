@@ -78,5 +78,5 @@ const option = computed<EChartsOption>(() => ({
 </script>
 
 <template>
-  <VChart class="h-full w-full" :option="option" autoresize />
+  <VChart class="h-40 w-full" :option="option" autoresize />
 </template>

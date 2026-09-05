@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { NTag } from 'naive-ui'
+import { useProxiesStore } from '@/stores/proxies'
 import type { ProxyGroup } from '@/stores/proxies'
 import CountryFlag from '@/components/CountryFlag.vue'
 import { parseProxyName } from '@/utils/flag'
+
+const proxiesStore = useProxiesStore()
 
 defineProps<{
   group: ProxyGroup
@@ -45,6 +48,9 @@ const emit = defineEmits<{
       >
         <CountryFlag :code="parseProxyName(node).code" :label="parseProxyName(node).label" :size="14" />
         <span class="max-w-[220px] truncate">{{ parseProxyName(node).name }}</span>
+        <span v-if="proxiesStore.delays[node] != null" class="text-muted">
+          {{ proxiesStore.delays[node] }}ms
+        </span>
       </button>
     </div>
   </div>

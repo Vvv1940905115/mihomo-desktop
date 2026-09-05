@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { NEmpty, NSpin, useMessage } from 'naive-ui'
+import { NButton, NEmpty, NIcon, NSpin, useMessage } from 'naive-ui'
+import { Activity } from '@vicons/tabler'
 import ProxyGroupCard from '@/components/ProxyGroupCard.vue'
 import { usePolling } from '@/hooks/usePolling'
 import { useProxiesStore } from '@/stores/proxies'
@@ -26,13 +27,30 @@ async function handleSelect(group: string, node: string): Promise<void> {
     selectingNode.value = ''
   }
 }
+
+function handleTestDelay(): void {
+  void proxiesStore.testAllDelays()
+}
 </script>
 
 <template>
   <div class="p-6">
     <div class="mb-4 flex items-center justify-between">
       <h1 class="text-lg font-semibold text-[#E6E8EC]">代理</h1>
-      <span class="text-xs text-muted">共 {{ proxiesStore.groups.length }} 个分组</span>
+      <div class="flex items-center gap-3">
+        <span class="text-xs text-muted">共 {{ proxiesStore.groups.length }} 个分组</span>
+        <NButton
+          size="small"
+          secondary
+          :loading="proxiesStore.testingDelay"
+          @click="handleTestDelay"
+        >
+          <template #icon>
+            <NIcon :size="14"><Activity /></NIcon>
+          </template>
+          延迟测试
+        </NButton>
+      </div>
     </div>
 
     <NSpin :show="proxiesStore.loading && proxiesStore.groups.length === 0">

@@ -46,6 +46,7 @@ func (s *Server) Handler() http.Handler {
 
 	// 转发 Mihomo（动态路径）
 	mux.HandleFunc("GET /api/proxies/{name}", s.handleGetProxy)
+	mux.HandleFunc("GET /api/proxies/{name}/delay", s.handleProxyDelay)
 	mux.HandleFunc("PUT /api/proxies/{name}", s.handlePutProxy)
 	mux.HandleFunc("DELETE /api/connections/{id}", s.handleDeleteConnection)
 

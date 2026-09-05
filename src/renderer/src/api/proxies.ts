@@ -34,3 +34,10 @@ export function getProxy(name: string): Promise<ProxyInfo> {
 export function switchProxy(group: string, proxy: string): Promise<unknown> {
   return http.put(`/proxies/${encodeURIComponent(group)}`, { name: proxy })
 }
+
+export function getProxyDelay(name: string): Promise<{ delay: number }> {
+  const testURL = 'http://www.gstatic.com/generate_204'
+  return http.get<{ delay: number }>(
+    `/proxies/${encodeURIComponent(name)}/delay?timeout=5000&url=${encodeURIComponent(testURL)}`
+  )
+}

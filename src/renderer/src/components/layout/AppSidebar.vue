@@ -50,6 +50,6 @@ function handleSelect(key: string): void {
       @update:value="handleSelect"
     />
 
-    <div class="px-5 py-4 text-xs text-muted">v0.1.0</div>
+    <div class="px-5 py-4 text-xs text-muted">v2.4.8</div>
   </aside>
 </template>

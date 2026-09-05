@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 const mihomoBaseURL = "http://127.0.0.1:9090"
@@ -168,6 +169,13 @@ func (p *MihomoProxy) buildRequest(r *http.Request, method, path string) (*http.
 
 func copyHeaders(w http.ResponseWriter, resp *http.Response) {
 	for key, values := range resp.Header {
+		// 上游 Mihomo 也会返回自己的 CORS 头，直接 Add 会和
+		// corsMiddleware 里设置的 Access-Control-Allow-Origin 叠加成
+		// "*, *"，导致浏览器判定为非法 CORS。这里跳过所有 CORS 头，
+		// 统一由 corsMiddleware 控制。
+		if strings.HasPrefix(key, "Access-Control-") {
+			continue
+		}
 		for _, value := range values {
 			w.Header().Add(key, value)
 		}

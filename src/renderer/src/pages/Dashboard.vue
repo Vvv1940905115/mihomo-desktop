@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
-import { NButton, NTag, useMessage } from 'naive-ui'
-import { ArrowDown, ArrowUp, Cpu, Gauge, World } from '@vicons/tabler'
+import { computed, onMounted, ref } from 'vue'
+import { NButton, NIcon, NTag, useMessage } from 'naive-ui'
+import { ArrowDown, ArrowUp, Cpu, Gauge, Refresh, World } from '@vicons/tabler'
 import StatCard from '@/components/StatCard.vue'
 import TrafficChart from '@/components/TrafficChart.vue'
 import ToggleCard from '@/components/ToggleCard.vue'
@@ -23,6 +23,8 @@ const message = useMessage()
 const ipCountry = computed(() => flagOf(system.ipInfo.country))
 
 const coreNotInstalled = computed(() => core.status.error === 'mihomo binary not installed')
+
+const ipRefreshing = ref(false)
 
 const coreStatusTag = computed(() => {
   if (core.status.running) return { type: 'success' as const, label: '运行中' }
@@ -66,6 +68,16 @@ async function handleModeChange(value: ProxyMode): Promise<void> {
   }
 }
 
+async function handleRefreshIP(): Promise<void> {
+  if (ipRefreshing.value) return
+  ipRefreshing.value = true
+  try {
+    await system.loadIP()
+  } finally {
+    ipRefreshing.value = false
+  }
+}
+
 async function handleCoreAction(action: () => Promise<void>): Promise<void> {
   try {
     await action()
@@ -86,9 +98,9 @@ async function handleInstall(): Promise<void> {
 </script>
 
 <template>
-  <div class="grid grid-cols-1 gap-4 p-6 md:grid-cols-2 xl:grid-cols-3">
+  <div class="grid grid-cols-1 gap-4 p-6 md:grid-cols-3">
     <!-- 网络速度 -->
-    <div class="card h-72 p-5 md:col-span-2">
+    <div class="card p-5 md:col-span-2">
       <div class="mb-2 flex items-center justify-between">
         <span class="text-sm font-medium text-[#E6E8EC]">实时网速</span>
         <span class="text-xs text-muted">每 1 秒刷新</span>
@@ -101,24 +113,38 @@ async function handleInstall(): Promise<void> {
       <StatCard title="实时下载" :value="formatSpeed(traffic.down)" :icon="ArrowDown" />
     </div>
 
-    <!-- 系统代理 / TUN / 出站模式 -->
+    <!-- ③ 系统代理 / 出站模式 / 内网 IP 横向排布 -->
     <ToggleCard
       title="系统代理"
       description="启用 Windows 系统代理"
       :model-value="system.systemProxy.enable"
       @update:model-value="handleToggleProxy"
     />
+    <ModeSelector :model-value="system.mode" @update:model-value="handleModeChange" />
+    <StatCard title="内网 IP" :value="system.lanIP || '—'" :icon="World" />
+
+    <!-- TUN / 网络检测 / 核心状态 -->
     <ToggleCard
       title="TUN 模式"
       description="接管系统全部流量"
       :model-value="system.tun"
       @update:model-value="handleToggleTun"
     />
-    <ModeSelector :model-value="system.mode" @update:model-value="handleModeChange" />
-
-    <!-- 网络检测 / 内网 IP -->
     <div class="card p-5">
-      <div class="mb-3 text-sm font-medium text-[#E6E8EC]">网络检测</div>
+      <div class="mb-3 flex items-center justify-between">
+        <span class="text-sm font-medium text-[#E6E8EC]">网络检测</span>
+        <NButton
+          size="tiny"
+          quaternary
+          :loading="ipRefreshing"
+          @click="handleRefreshIP"
+        >
+          <template #icon>
+            <NIcon :size="14"><Refresh /></NIcon>
+          </template>
+          刷新
+        </NButton>
+      </div>
       <div class="space-y-2 text-sm">
         <div class="flex justify-between">
           <span class="text-muted">公网 IP</span>
@@ -138,49 +164,17 @@ async function handleInstall(): Promise<void> {
             </span>
           </span>
         </div>
-        <div class="flex justify-between">
-          <span class="text-muted">运营商</span>
-          <span class="text-[#E6E8EC]">{{ system.ipInfo.isp || '—' }}</span>
+        <div class="flex items-center justify-between gap-3">
+          <span class="shrink-0 text-muted">运营商</span>
+          <span
+            class="max-w-[180px] truncate text-[#E6E8EC]"
+            :title="system.ipInfo.isp || '—'"
+          >
+            {{ system.ipInfo.isp || '—' }}
+          </span>
         </div>
       </div>
     </div>
-
-    <StatCard title="内网 IP" :value="system.lanIP || '—'" :icon="World" />
-
-    <!-- 流量统计 -->
-    <div class="card p-5 md:col-span-2 xl:col-span-3">
-      <div class="mb-3 text-sm font-medium text-[#E6E8EC]">流量统计</div>
-      <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <div>
-          <div class="text-xs text-muted">今日上传</div>
-          <div class="mt-1 text-lg font-semibold text-[#E6E8EC]">
-            {{ formatBytes(traffic.todayUp) }}
-          </div>
-        </div>
-        <div>
-          <div class="text-xs text-muted">今日下载</div>
-          <div class="mt-1 text-lg font-semibold text-[#E6E8EC]">
-            {{ formatBytes(traffic.todayDown) }}
-          </div>
-        </div>
-        <div>
-          <div class="text-xs text-muted">累计上传</div>
-          <div class="mt-1 text-lg font-semibold text-[#E6E8EC]">
-            {{ formatBytes(traffic.totalUp) }}
-          </div>
-        </div>
-        <div>
-          <div class="text-xs text-muted">累计下载</div>
-          <div class="mt-1 text-lg font-semibold text-[#E6E8EC]">
-            {{ formatBytes(traffic.totalDown) }}
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 内存占用 -->
-    <StatCard title="Core 内存" :value="formatBytes(core.memory.core)" :icon="Cpu" />
-    <StatCard title="UI 内存" :value="formatBytes(core.memory.ui)" :icon="Gauge" />
 
     <!-- 核心状态 -->
     <div class="card p-5">
@@ -223,5 +217,42 @@ async function handleInstall(): Promise<void> {
         </template>
       </div>
     </div>
+
+    <!-- 流量统计：横向单行 + 竖线分隔 -->
+    <div class="card px-5 py-3 md:col-span-3">
+      <div class="flex items-center gap-4">
+        <span class="shrink-0 text-sm font-medium text-[#E6E8EC]">流量统计</span>
+        <div class="flex min-w-0 flex-1 items-stretch divide-x divide-[#3A3E48]">
+          <div class="flex-1 px-4" title="本次会话今日上传流量">
+            <div class="text-xs text-muted">↑ 今日上传</div>
+            <div class="mt-0.5 truncate text-base font-semibold text-[#E6E8EC]">
+              {{ formatBytes(traffic.todayUp) }}
+            </div>
+          </div>
+          <div class="flex-1 px-4" title="本次会话今日下载流量">
+            <div class="text-xs text-muted">↓ 今日下载</div>
+            <div class="mt-0.5 truncate text-base font-semibold text-[#E6E8EC]">
+              {{ formatBytes(traffic.todayDown) }}
+            </div>
+          </div>
+          <div class="flex-1 px-4" title="会话累计上传总流量">
+            <div class="text-xs text-muted">↑ 累计上传</div>
+            <div class="mt-0.5 truncate text-base font-semibold text-[#E6E8EC]">
+              {{ formatBytes(traffic.totalUp) }}
+            </div>
+          </div>
+          <div class="flex-1 px-4" title="会话累计下载总流量">
+            <div class="text-xs text-muted">↓ 累计下载</div>
+            <div class="mt-0.5 truncate text-base font-semibold text-[#E6E8EC]">
+              {{ formatBytes(traffic.totalDown) }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 内存占用 -->
+    <StatCard title="Core 内存" :value="formatBytes(core.memory.core)" :icon="Cpu" />
+    <StatCard title="UI 内存" :value="formatBytes(core.memory.ui)" :icon="Gauge" />
   </div>
 </template>
