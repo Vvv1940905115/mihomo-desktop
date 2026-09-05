@@ -1,0 +1,13 @@
+node_modules
+out
+dist
+.DS_Store
+*.log
+core/core
+core/mihomo
+core/*.exe
+.env
+.env.*
+.tools
+.data
+*.tsbuildinfo
