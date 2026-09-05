@@ -37,7 +37,7 @@ function handleSelect(key: string): void {
         </NIcon>
       </div>
       <div class="leading-tight">
-        <div class="text-sm font-semibold text-[#E6E8EC]">Mihomo Client</div>
+        <div class="text-sm font-semibold text-[#E6E8EC]">灵核工坊</div>
         <div class="text-xs text-muted">现代化代理客户端</div>
       </div>
     </div>
