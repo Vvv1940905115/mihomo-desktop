@@ -4,10 +4,12 @@ import { app } from 'electron'
 
 let sidecarProcess: ChildProcess | null = null
 
-const SIDECAR_BIN = join(app.getAppPath(), 'resources', 'sidecar', 'mihomo-service.exe')
-
 export function startSidecar(): void {
   if (sidecarProcess) return
+
+  // app.getAppPath() must be called after app is ready; resolve it here
+  // instead of at module top-level so the main process can boot cleanly.
+  const SIDECAR_BIN = join(app.getAppPath(), 'resources', 'sidecar', 'mihomo-service.exe')
 
   try {
     sidecarProcess = spawn(SIDECAR_BIN, [], {
