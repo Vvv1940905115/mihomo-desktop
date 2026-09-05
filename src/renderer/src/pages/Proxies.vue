@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { NButton, NEmpty, NIcon, NSpin, useMessage } from 'naive-ui'
+import { NButton, NEmpty, NIcon, NInputNumber, NSpin, useMessage } from 'naive-ui'
 import { Activity } from '@vicons/tabler'
 import ProxyGroupCard from '@/components/ProxyGroupCard.vue'
 import { usePolling } from '@/hooks/usePolling'
@@ -39,6 +39,27 @@ function handleTestDelay(): void {
       <h1 class="text-lg font-semibold text-[#E6E8EC]">代理</h1>
       <div class="flex items-center gap-3">
         <span class="text-xs text-muted">共 {{ proxiesStore.groups.length }} 个分组</span>
+        <div class="flex items-center gap-1">
+          <span class="text-xs text-muted">并发</span>
+          <NInputNumber
+            v-model:value="proxiesStore.testConcurrency"
+            :min="1"
+            :max="20"
+            size="small"
+            style="width: 72px"
+          />
+        </div>
+        <div class="flex items-center gap-1">
+          <span class="text-xs text-muted">超时(ms)</span>
+          <NInputNumber
+            v-model:value="proxiesStore.testTimeout"
+            :min="1000"
+            :max="30000"
+            :step="1000"
+            size="small"
+            style="width: 96px"
+          />
+        </div>
         <NButton
           size="small"
           secondary

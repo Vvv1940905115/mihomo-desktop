@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { NTag } from 'naive-ui'
-import { useProxiesStore } from '@/stores/proxies'
+import { useProxiesStore, DELAY_GOOD_MS, DELAY_MEDIUM_MS } from '@/stores/proxies'
 import type { ProxyGroup } from '@/stores/proxies'
 import CountryFlag from '@/components/CountryFlag.vue'
 import { parseProxyName } from '@/utils/flag'
@@ -15,6 +15,23 @@ defineProps<{
 const emit = defineEmits<{
   (e: 'select', node: string): void
 }>()
+
+function delayText(node: string): string {
+  const result = proxiesStore.delays[node]
+  if (!result) return ''
+  if (result.status === 'timeout') return '超时'
+  if (result.status === 'error') return '失败'
+  return `${result.delay}ms`
+}
+
+function delayClass(node: string): string {
+  const result = proxiesStore.delays[node]
+  if (!result) return ''
+  if (result.status !== 'ok') return 'text-red-500'
+  if (result.delay < DELAY_GOOD_MS) return 'text-green-500'
+  if (result.delay < DELAY_MEDIUM_MS) return 'text-yellow-500'
+  return 'text-red-500'
+}
 </script>
 
 <template>
@@ -48,8 +65,8 @@ const emit = defineEmits<{
       >
         <CountryFlag :code="parseProxyName(node).code" :label="parseProxyName(node).label" :size="14" />
         <span class="max-w-[220px] truncate">{{ parseProxyName(node).name }}</span>
-        <span v-if="proxiesStore.delays[node] != null" class="text-muted">
-          {{ proxiesStore.delays[node] }}ms
+        <span v-if="proxiesStore.delays[node]" class="ml-1 shrink-0" :class="delayClass(node)">
+          {{ delayText(node) }}
         </span>
       </button>
     </div>

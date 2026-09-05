@@ -35,9 +35,14 @@ export function switchProxy(group: string, proxy: string): Promise<unknown> {
   return http.put(`/proxies/${encodeURIComponent(group)}`, { name: proxy })
 }
 
-export function getProxyDelay(name: string): Promise<{ delay: number }> {
+export function getProxyDelay(
+  name: string,
+  timeout = 5000,
+  signal?: AbortSignal
+): Promise<{ delay: number }> {
   const testURL = 'http://www.gstatic.com/generate_204'
   return http.get<{ delay: number }>(
-    `/proxies/${encodeURIComponent(name)}/delay?timeout=5000&url=${encodeURIComponent(testURL)}`
+    `/proxies/${encodeURIComponent(name)}/delay?timeout=${timeout}&url=${encodeURIComponent(testURL)}`,
+    { signal }
   )
 }
