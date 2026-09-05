@@ -24,15 +24,16 @@ function loadWindowIcon() {
 export function createMainWindow(): BrowserWindow {
   const icon = loadWindowIcon()
   const mainWindow = new BrowserWindow({
-    width: 1280,
-    height: 820,
-    minWidth: 960,
-    minHeight: 640,
+    width: 960,
+    height: 680,
+    resizable: true,
+    minWidth: 840,
+    minHeight: 620,
     show: false,
     frame: true,
     autoHideMenuBar: true,
     backgroundColor: '#1F2025',
-    title: 'Mihomo Client',
+    title: '灵核工坊',
     icon,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
