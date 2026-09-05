@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { NTag } from 'naive-ui'
 import type { ProxyGroup } from '@/stores/proxies'
+import CountryFlag from '@/components/CountryFlag.vue'
+import { parseProxyName } from '@/utils/flag'
 
 defineProps<{
   group: ProxyGroup
@@ -19,7 +21,11 @@ const emit = defineEmits<{
         <span class="truncate text-sm font-semibold text-[#E6E8EC]">{{ group.name }}</span>
         <NTag size="small" round :bordered="false">{{ group.type }}</NTag>
       </div>
-      <span class="shrink-0 text-xs text-muted">当前：{{ group.now }}</span>
+      <span class="flex shrink-0 items-center gap-1.5 text-xs text-muted">
+        当前：
+        <CountryFlag :code="parseProxyName(group.now).code" :label="parseProxyName(group.now).label" :size="13" />
+        <span class="max-w-[160px] truncate">{{ parseProxyName(group.now).name || '—' }}</span>
+      </span>
     </div>
 
     <div class="flex flex-wrap gap-2">
@@ -28,7 +34,8 @@ const emit = defineEmits<{
         :key="node"
         type="button"
         :disabled="selecting === node"
-        class="rounded-full border px-3 py-1 text-xs transition-all duration-300 disabled:opacity-50"
+        :title="parseProxyName(node).label || node"
+        class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition-all duration-300 disabled:opacity-50"
         :class="
           node === group.now
             ? 'border-accent bg-accent/15 text-accent'
@@ -36,7 +43,8 @@ const emit = defineEmits<{
         "
         @click="emit('select', node)"
       >
-        {{ node }}
+        <CountryFlag :code="parseProxyName(node).code" :label="parseProxyName(node).label" :size="14" />
+        <span class="max-w-[220px] truncate">{{ parseProxyName(node).name }}</span>
       </button>
     </div>
   </div>

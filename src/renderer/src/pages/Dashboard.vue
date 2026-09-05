@@ -6,17 +6,21 @@ import StatCard from '@/components/StatCard.vue'
 import TrafficChart from '@/components/TrafficChart.vue'
 import ToggleCard from '@/components/ToggleCard.vue'
 import ModeSelector from '@/components/ModeSelector.vue'
+import CountryFlag from '@/components/CountryFlag.vue'
 import { usePolling } from '@/hooks/usePolling'
 import { useTrafficStore } from '@/stores/traffic'
 import { useSystemStore } from '@/stores/system'
 import { useCoreStore } from '@/stores/core'
 import { formatBytes, formatSpeed, formatUptime } from '@/utils/format'
+import { flagOf } from '@/utils/flag'
 import type { ProxyMode } from '@/api/types'
 
 const traffic = useTrafficStore()
 const system = useSystemStore()
 const core = useCoreStore()
 const message = useMessage()
+
+const ipCountry = computed(() => flagOf(system.ipInfo.country))
 
 const coreNotInstalled = computed(() => core.status.error === 'mihomo binary not installed')
 
@@ -120,9 +124,19 @@ async function handleInstall(): Promise<void> {
           <span class="text-muted">公网 IP</span>
           <span class="text-[#E6E8EC]">{{ system.ipInfo.ip || '—' }}</span>
         </div>
-        <div class="flex justify-between">
+        <div class="flex items-center justify-between">
           <span class="text-muted">国家</span>
-          <span class="text-[#E6E8EC]">{{ system.ipInfo.country || '—' }}</span>
+          <span class="flex items-center gap-1.5">
+            <CountryFlag
+              v-if="system.ipInfo.country"
+              :code="ipCountry.code"
+              :label="ipCountry.label || system.ipInfo.country"
+              :size="14"
+            />
+            <span class="text-[#E6E8EC]">
+              {{ ipCountry.label || system.ipInfo.country || '—' }}
+            </span>
+          </span>
         </div>
         <div class="flex justify-between">
           <span class="text-muted">运营商</span>

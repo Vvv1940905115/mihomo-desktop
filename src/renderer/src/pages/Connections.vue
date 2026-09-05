@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed, h } from 'vue'
+import { computed, h, type VNode } from 'vue'
 import { NButton, NDataTable, NEmpty, useMessage, type DataTableColumns } from 'naive-ui'
 import { usePolling } from '@/hooks/usePolling'
 import { useConnectionsStore } from '@/stores/connections'
 import type { ConnectionWithSpeed } from '@/stores/connections'
+import CountryFlag from '@/components/CountryFlag.vue'
+import { parseProxyName } from '@/utils/flag'
 import { formatSpeed } from '@/utils/format'
 
 const store = useConnectionsStore()
@@ -43,7 +45,23 @@ const columns = computed<DataTableColumns<ConnectionWithSpeed>>(() => [
     title: '节点',
     key: 'chain',
     ellipsis: { tooltip: true },
-    render: (row) => (row.chains.length ? row.chains.join(' → ') : '—')
+    render: (row) => {
+      if (!row.chains.length) return '—'
+      const nodes: VNode[] = []
+      row.chains.forEach((chain, index) => {
+        if (index > 0) {
+          nodes.push(h('span', { class: 'mx-1 text-[#8A8F9C]' }, '→'))
+        }
+        const info = parseProxyName(chain)
+        nodes.push(
+          h('span', { class: 'inline-flex items-center gap-1' }, [
+            h(CountryFlag, { code: info.code, label: info.label, size: 12 }),
+            h('span', null, info.name)
+          ])
+        )
+      })
+      return h('span', { class: 'inline-flex flex-wrap items-center' }, nodes)
+    }
   },
   {
     title: '上传速度',
