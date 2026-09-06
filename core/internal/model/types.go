@@ -7,6 +7,7 @@ type Subscription struct {
 	ID         string    `json:"id"`
 	Name       string    `json:"name"`
 	URL        string    `json:"url"`
+	Kind       string    `json:"kind"` // remote | node | nodes
 	UpdatedAt  time.Time `json:"updatedAt"`
 	Status     string    `json:"status"`
 	ProxyCount int       `json:"proxyCount"`

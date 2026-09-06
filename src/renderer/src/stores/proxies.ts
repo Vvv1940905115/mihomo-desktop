@@ -77,15 +77,15 @@ export const useProxiesStore = defineStore('proxies', () => {
     await Promise.all(runners)
   }
 
-  async function testAllDelays(): Promise<void> {
+  async function testDelays(names: string[]): Promise<void> {
     if (testingDelay.value) return
     testingDelay.value = true
     try {
-      const names = [...new Set(groups.value.flatMap((group) => group.all))]
+      const unique = [...new Set(names)]
       const timeout = testTimeout.value
       const next: Record<string, DelayResult> = {}
 
-      await runWithConcurrency(names, testConcurrency.value, async (name) => {
+      await runWithConcurrency(unique, testConcurrency.value, async (name) => {
         const controller = new AbortController()
         const timer = setTimeout(() => controller.abort(), timeout)
         try {
@@ -99,10 +99,18 @@ export const useProxiesStore = defineStore('proxies', () => {
         }
       })
 
-      delays.value = next
+      delays.value = { ...delays.value, ...next }
     } finally {
       testingDelay.value = false
     }
+  }
+
+  async function testAllDelays(): Promise<void> {
+    await testDelays(groups.value.flatMap((group) => group.all))
+  }
+
+  function clearDelays(): void {
+    delays.value = {}
   }
 
   return {
@@ -115,6 +123,8 @@ export const useProxiesStore = defineStore('proxies', () => {
     loading,
     load,
     select,
-    testAllDelays
+    testDelays,
+    testAllDelays,
+    clearDelays
   }
 })

@@ -18,7 +18,7 @@ publish: null
 
 # 产物输出目录
 directories:
-  output: dist
+  output: dist2
 
 # 打包进 app.asar 的文件（electron-vite 构建产物在 out/）
 files:

@@ -23,7 +23,10 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     throw new ApiError(`请求失败 (${response.status})`, response.status)
   }
 
-  return (await response.json()) as T
+  // 部分接口（如切换出站模式 PATCH /configs）会返回 204 无内容，
+  // 直接调用 response.json() 会因空 body 抛错，这里对空响应返回 undefined。
+  const text = await response.text()
+  return text ? (JSON.parse(text) as T) : (undefined as T)
 }
 
 export const http = {

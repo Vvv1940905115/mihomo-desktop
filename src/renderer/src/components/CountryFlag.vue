@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { NTooltip } from 'naive-ui'
 
 const props = withDefaults(
   defineProps<{
@@ -17,22 +18,25 @@ const hasFlag = computed(() => !!props.code && /^[a-z]{2}$/.test(props.code))
 const style = computed(() => ({
   fontSize: typeof props.size === 'number' ? `${props.size}px` : props.size
 }))
+const tip = computed(() => props.label || '未知地区')
 </script>
 
 <template>
-  <span
-    v-if="hasFlag"
-    class="fi node-flag"
-    :class="`fi-${code}`"
-    :style="style"
-    :title="label || ''"
-  />
-  <span v-else class="node-flag node-flag--empty" :style="style" :title="label || '未知地区'">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M3 12h18M12 3c2.7 2.8 2.7 15.2 0 18M12 3c-2.7 2.8-2.7 15.2 0 18" />
-    </svg>
-  </span>
+  <NTooltip trigger="hover">
+    <template #trigger>
+      <span
+        class="node-flag"
+        :class="hasFlag ? `fi fi-${code}` : 'node-flag--empty'"
+        :style="style"
+      >
+        <svg v-if="!hasFlag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M3 12h18M12 3c2.7 2.8 2.7 15.2 0 18M12 3c-2.7 2.8-2.7 15.2 0 18" />
+        </svg>
+      </span>
+    </template>
+    {{ tip }}
+  </NTooltip>
 </template>
 
 <style scoped>

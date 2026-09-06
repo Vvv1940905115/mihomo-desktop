@@ -31,6 +31,10 @@ export function getProxy(name: string): Promise<ProxyInfo> {
   return http.get<ProxyInfo>(`/proxies/${encodeURIComponent(name)}`)
 }
 
+export function getProxyRaw(name: string): Promise<ProxyInfo> {
+  return http.get<ProxyInfo>(`/proxies/${encodeURIComponent(name)}/raw`)
+}
+
 export function switchProxy(group: string, proxy: string): Promise<unknown> {
   return http.put(`/proxies/${encodeURIComponent(group)}`, { name: proxy })
 }

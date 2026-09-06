@@ -38,6 +38,17 @@ func (s *Server) handleDeleteConnection(w http.ResponseWriter, r *http.Request) 
 	s.mihomo.forward(w, r, "/connections/"+r.PathValue("id"))
 }
 
+// handleGetProxyRaw 返回节点的完整原始定义。订阅节点直接从解析结果取，
+// 内置节点（如 DIRECT）回退到 Mihomo 的 /proxies/{name}。
+func (s *Server) handleGetProxyRaw(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	if p, ok := s.subs.FindProxy(name); ok {
+		writeJSON(w, http.StatusOK, p)
+		return
+	}
+	s.mihomo.forward(w, r, "/proxies/"+name)
+}
+
 // --- Core 管理 ---
 
 func (s *Server) handleCoreStatus(w http.ResponseWriter, _ *http.Request) {

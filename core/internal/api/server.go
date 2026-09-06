@@ -1,8 +1,10 @@
 package api
 
 import (
+	"log"
 	"net/http"
 
+	"mihomo-client/core/internal/config"
 	"mihomo-client/core/internal/core"
 	"mihomo-client/core/internal/subscription"
 )
@@ -21,11 +23,33 @@ func NewServer(dataDir string) (*Server, error) {
 		return nil, err
 	}
 
-	return &Server{
+	s := &Server{
 		core:   core.NewManager(dataDir),
 		subs:   subs,
 		mihomo: newMihomoProxy(),
-	}, nil
+	}
+	s.subs.OnChange(s.reconcile)
+	// 启动时拉取已有订阅，确保节点合并进内核配置（内核未运行时仅写配置）。
+	go s.subs.UpdateAll()
+	// 内核已安装则自动拉起，保证出站模式切换等核心功能开箱即用；
+	// 未安装或端口被占用等失败情况只记录日志，不阻塞控制面启动。
+	if err := s.core.Start(); err != nil {
+		log.Printf("auto-start core: %v", err)
+	}
+	return s, nil
+}
+
+// reconcile 将当前订阅节点合并进内核配置，并在内核运行时重启使其生效。
+func (s *Server) reconcile() {
+	if err := config.MergeProxies(s.core.ConfigPath(), s.subs.Proxies()); err != nil {
+		log.Printf("merge proxies: %v", err)
+		return
+	}
+	if s.core.Status().Running {
+		if err := s.core.Restart(); err != nil {
+			log.Printf("restart core after merge: %v", err)
+		}
+	}
 }
 
 // Handler 返回带 CORS 的完整路由。
@@ -47,6 +71,7 @@ func (s *Server) Handler() http.Handler {
 	// 转发 Mihomo（动态路径）
 	mux.HandleFunc("GET /api/proxies/{name}", s.handleGetProxy)
 	mux.HandleFunc("GET /api/proxies/{name}/delay", s.handleProxyDelay)
+	mux.HandleFunc("GET /api/proxies/{name}/raw", s.handleGetProxyRaw)
 	mux.HandleFunc("PUT /api/proxies/{name}", s.handlePutProxy)
 	mux.HandleFunc("DELETE /api/connections/{id}", s.handleDeleteConnection)
 

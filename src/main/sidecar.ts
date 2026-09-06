@@ -15,8 +15,12 @@ export function startSidecar(): void {
     ? join(process.resourcesPath, 'sidecar', 'mihomo-service.exe')
     : join(app.getAppPath(), 'resources', 'sidecar', 'mihomo-service.exe')
 
+  // dev 下用项目根目录 .data 作为数据目录：既与 Electron userData 隔离，
+  // 也避免系统目录的写权限限制；生产环境仍走默认 %APPDATA%\mihomo-client。
+  const args = app.isPackaged ? [] : ['-home', join(app.getAppPath(), '.data')]
+
   try {
-    sidecarProcess = spawn(SIDECAR_BIN, [], {
+    sidecarProcess = spawn(SIDECAR_BIN, args, {
       stdio: 'ignore',
       windowsHide: true
     })

@@ -4,6 +4,7 @@ export interface Subscription {
   id: string
   name: string
   url: string
+  kind?: string
   updatedAt: string
   status: string
   proxyCount: number
