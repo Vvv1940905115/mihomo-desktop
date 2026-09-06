@@ -9,13 +9,9 @@ Windows 平台的现代化 Mihomo（Clash Meta）桌面客户端，采用 **Elec
 
 ## 界面预览
 
-**首页 Dashboard** — 实时网速图、系统代理 / 虚拟网卡开关、出站模式、网络检测、流量统计、内存与启动时间：
+**首页 Dashboard** — 实时网速图、系统代理 / 虚拟网卡开关、出站模式、网络检测、流量统计、内存与启动时间。
 
-![首页 Dashboard](docs/images/dashboard.png)
-
-**订阅管理** — 新增 / 更新订阅，显示节点数与更新状态：
-
-![订阅管理](docs/images/subscriptions.png)
+**订阅管理** — 新增 / 更新订阅，显示节点数与更新状态。
 
 ---
 
