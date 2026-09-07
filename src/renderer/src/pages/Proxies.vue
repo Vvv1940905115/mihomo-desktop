@@ -81,8 +81,7 @@ function protocolOf(node: string): string {
 function delayText(node: string): string {
   const result = proxiesStore.delays[node]
   if (!result) return ''
-  if (result.status === 'timeout') return '超时'
-  if (result.status === 'error') return '失败'
+  if (result.status !== 'ok') return '-0'
   return `${result.delay}ms`
 }
 
@@ -90,7 +89,13 @@ function delayClass(node: string): string {
   const result = proxiesStore.delays[node]
   if (!result) return ''
   if (result.status !== 'ok') return 'text-red-500'
-  return result.delay < DELAY_GOOD_MS ? 'text-green-500' : 'text-red-500'
+  return result.delay < DELAY_GOOD_MS ? 'text-green-500' : 'text-yellow-500'
+}
+
+/** 节点测速失败（真正不通）时禁用选择 */
+function isNodeFailed(node: string): boolean {
+  const result = proxiesStore.delays[node]
+  return !!result && result.status !== 'ok'
 }
 
 function renderIcon(icon: Component) {
@@ -289,7 +294,7 @@ async function handleShowDetail(node: string): Promise<void> {
               v-for="node in filteredNodes"
               :key="node"
               type="button"
-              :disabled="selectingNode === node"
+              :disabled="selectingNode === node || isNodeFailed(node)"
               class="flex flex-col gap-2 rounded-card border p-3 text-left transition-all duration-300 disabled:opacity-50"
               :class="
                 node === currentGroup?.now

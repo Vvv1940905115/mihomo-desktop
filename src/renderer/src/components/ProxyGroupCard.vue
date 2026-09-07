@@ -19,8 +19,7 @@ const emit = defineEmits<{
 function delayText(node: string): string {
   const result = proxiesStore.delays[node]
   if (!result) return ''
-  if (result.status === 'timeout') return '超时'
-  if (result.status === 'error') return '失败'
+  if (result.status !== 'ok') return '-0'
   return `${result.delay}ms`
 }
 
@@ -28,7 +27,13 @@ function delayClass(node: string): string {
   const result = proxiesStore.delays[node]
   if (!result) return ''
   if (result.status !== 'ok') return 'text-red-500'
-  return result.delay < DELAY_GOOD_MS ? 'text-green-500' : 'text-red-500'
+  return result.delay < DELAY_GOOD_MS ? 'text-green-500' : 'text-yellow-500'
+}
+
+/** 节点测速失败（真正不通）时禁用选择 */
+function isNodeFailed(node: string): boolean {
+  const result = proxiesStore.delays[node]
+  return !!result && result.status !== 'ok'
 }
 </script>
 
@@ -51,7 +56,7 @@ function delayClass(node: string): string {
         v-for="node in group.all"
         :key="node"
         type="button"
-        :disabled="selecting === node"
+        :disabled="selecting === node || isNodeFailed(node)"
         :title="parseProxyName(node).label || node"
         class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition-all duration-300 disabled:opacity-50"
         :class="
