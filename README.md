@@ -6,7 +6,7 @@ Windows 平台的现代化 Mihomo（Clash Meta）桌面客户端，采用 **Elec
 > 当前版本：**2.4.8**  
 > 已可运行：Dashboard / 代理 / 订阅 / 连接 / 日志 五个页面 + 内核生命周期 + 系统代理 + **系统托盘**，桌面版核心能力已实现。  
 > 已支持：NSIS 安装包打包（`npm run dist`）。  
-> 桌面版发布见 https://github.com/Vvv1940905115/mihomo-desktop/releases/tag/v1.9.0 
+> 桌面版发布见 https://github.com/Vvv1940905115/mihomo-desktop/releases/tag/v2.1.0 
 > 尚未完成：设置项落地、订阅合并进内核配置。详见 [已知限制](#14-已知限制与未完成项)。
 
 ## 界面预览
