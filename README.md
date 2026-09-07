@@ -3,11 +3,11 @@
 Windows 平台的现代化 Mihomo（Clash Meta）桌面客户端，采用 **Electron + Vue 3 + TypeScript + Go** 三端架构。  
 渲染层只负责 UI，所有代理逻辑由 Go 控制面（sidecar）统一管理，Mihomo 内核作为子进程被拉起。
 
-> 当前版本：**2.4.8（早期开发中）**
-> 桌面版发布了 https://github.com/Vvv1940905115/mihomo-desktop/releases
-
-> 已可运行: Dashboard / 代理 / 订阅 / 连接 / 日志 五个页面 + 内核生命周期 + 系统代理，**桌面版能力已经完全实现**。
-> 尚未完成: 设置项落地。详见 [已知限制](#14‑已知限制与未完成项)。
+> 当前版本：**2.4.8**  
+> 已可运行：Dashboard / 代理 / 订阅 / 连接 / 日志 五个页面 + 内核生命周期 + 系统代理 + **系统托盘**，桌面版核心能力已实现。  
+> 已支持：NSIS 安装包打包（`npm run dist`）。  
+> 桌面版发布见 <https://github.com/Vvv1940905115/mihomo-desktop/releases>  
+> 尚未完成：设置项落地、订阅合并进内核配置。详见 [已知限制](#14-已知限制与未完成项)。
 
 ## 界面预览
 
@@ -38,7 +38,7 @@ Windows 平台的现代化 Mihomo（Clash Meta）桌面客户端，采用 **Elec
 - [9. 端口与数据目录](#9-端口与数据目录)
 - [10. 常用命令速查](#10-常用命令速查)
 - [11. 控制面 API 一览](#11-控制面-api-一览)
-- [12. 打包发布](#12-打包发布尚未配置)
+- [12. 打包发布](#12-打包发布)
 - [13. 故障排查](#13-故障排查)
 - [14. 已知限制与未完成项](#14-已知限制与未完成项)
 - [15. 开发规范](#15-开发规范)
@@ -88,6 +88,7 @@ Windows 平台的现代化 Mihomo（Clash Meta）桌面客户端，采用 **Elec
 | **连接**           | 实时连接列表、断开指定连接                                                               |
 | **日志**           | SSE 实时流、按等级过滤、搜索                                                            |
 | **设置**           | 主题、跟随系统、日志等级、核心路径、下载目录（⚠️ 部分仅保存到本地，见 [已知限制](#14-已知限制与未完成项)）                 |
+| **系统托盘**       | 关闭窗口最小化到托盘而非退出；左键显示窗口，右键菜单含「显示窗口 / 退出程序」；退出时托盘图标自动释放无残留                              |
 
 技术栈：Vue 3 + TypeScript(strict) + Vite 6 + electron-vite + Pinia + Vue Router + Naive UI + TailwindCSS + ECharts + Electron 33 + Go 1.22+
 
@@ -395,6 +396,12 @@ Invoke-RestMethod http://127.0.0.1:38888/api/core/status
 
 退出应用前请记得**关闭系统代理**，否则会出现「上不了网」，详见 [故障排查](#13-故障排查)。
 
+**系统托盘行为**：
+- 点击窗口关闭按钮（×）→ 窗口最小化到系统托盘，**应用不退出**；
+- 左键托盘图标 → 恢复并聚焦主窗口；
+- 右键托盘图标 → 弹出菜单「显示窗口 / 退出程序」；
+- 选择「退出程序」→ 完全退出应用，托盘图标自动释放。
+
 ---
 
 ## 8. 目录结构
@@ -413,7 +420,7 @@ mihomo-desktop/
 │       ├── system/             # 系统代理(proxy.go) / IP(network.go) / 内存(memory.go)
 │       └── model/              # 共享类型
 ├── src/
-│   ├── main/                   # Electron 主进程：index.ts / window.ts / sidecar.ts
+│   ├── main/                   # Electron 主进程：index.ts / window.ts / sidecar.ts / tray.ts
 │   ├── preload/                # contextBridge 桥接（暴露 electronAPI）
 │   └── renderer/src/
 │       ├── api/                # 统一 fetch 封装，baseURL = http://127.0.0.1:38888/api
@@ -500,6 +507,7 @@ rules:
 | -------------------------------------------------------------------- | ------------------------------------ |
 | `npm run dev`                                                        | 开发模式（vite dev server + Electron 热重载） |
 | `npm run build`                                                      | 构建前端与主进程到 `out/`（**不产出安装包**）         |
+| `npm run dist`                                                       | 构建并打包成 NSIS 安装包（输出到 `dist2/`）              |
 | `npm run start`                                                      | 预览 `out/` 构建产物                       |
 | `npm run typecheck`                                                  | 主进程 + 渲染层全量类型检查                      |
 | `npm run typecheck:node`                                             | 仅主进程 / preload                       |
@@ -564,41 +572,160 @@ Base URL：`http://127.0.0.1:38888/api`（已开启 CORS）
 
 ---
 
-## 12. 打包发布（尚未配置）
+## 12. 打包发布
 
-`npm run build` **只把代码编译到 `out/` 目录，不会生成安装包**。  
-当前仓库既没有 `electron-builder.yml`，`package.json` 里也没有 `build` 配置段。
+本项目已配置 **electron-builder + NSIS**，一条命令即可产出 Windows 安装包。
 
-若需要产出安装包，需自行补充（以下为建议配置，尚未纳入仓库）：
+### 12.1 打包前准备
 
-1. 新建 `electron-builder.yml`：
+1. **构建 Go sidecar**（必做，否则打包后应用拉不起控制面）：
+
+   ```powershell
+   cd core
+   go build -trimpath -ldflags "-s -w" -o ..\resources\sidecar\mihomo-service.exe .
+   cd ..
+   ```
+
+2. **准备图标文件**（`resources/` 目录下需存在以下两个文件）：
+
+   | 文件          | 用途                      | 说明                                              |
+   | ----------- | ----------------------- | ----------------------------------------------- |
+   | `icon.png`  | 系统托盘图标 / 窗口图标          | 打包时通过 `extraResources` 释放到安装目录 `resources/`，托盘与窗口运行时加载 |
+   | `icon.ico`  | 安装包图标 / 快捷方式图标 / exe 图标 | 若缺失，可运行 `build-icon.ps1` 从 `icon.png` 自动生成多尺寸 ico |
+
+   生成 ico（可选，仓库已自带一份）：
+
+   ```powershell
+   .\build-icon.ps1
+   # 输出：resources\icon.ico（包含 16/24/32/48/64/128/256 七种尺寸）
+   ```
+
+### 12.2 执行打包
+
+```powershell
+npm run dist
+```
+
+该脚本实际执行（见 `package.json`）：
+
+```powershell
+electron-vite build `
+  && cross-env `
+     ELECTRON_BUILDER_BINARIES_MIRROR=https://npmmirror.com/mirrors/electron-builder-binaries/ `
+     ELECTRON_BUILDER_CACHE=.cache/electron-builder `
+     electron-builder --win
+```
+
+- `electron-vite build`：将主进程 / preload / 渲染层编译到 `out/`；
+- `electron-builder --win`：读取 `electron-builder.yml`，复制 Electron 运行时、打包 asar、生成 NSIS 安装包。
+
+> 国内网络建议提前配置 npm / Electron / electron-builder 镜像（见 [5.2](#52-安装-node-依赖)），  
+> `ELECTRON_BUILDER_CACHE=.cache/electron-builder` 会把 NSIS / winCodeSign 等工具缓存到项目内，避免重复下载。
+
+### 12.3 产物说明
+
+打包输出目录为 `dist2/`（由 `electron-builder.yml` 的 `directories.output` 指定）：
+
+```
+dist2/
+├── Mihomo Desktop Setup 2.4.8.exe      # NSIS 安装包（约 95 MB）
+├── Mihomo Desktop Setup 2.4.8.exe.blockmap
+└── win-unpacked/                       # 解压后的绿色版目录
+    ├── Mihomo Desktop.exe              # 主程序
+    ├── resources/
+    │   ├── app.asar                    # 打包后的应用代码
+    │   ├── icon.png                    # 托盘 / 窗口图标（extraResources 释放）
+    │   └── sidecar/
+    │       └── mihomo-service.exe      # Go 控制面（extraResources 释放）
+    └── ...（Electron 运行时文件）
+```
+
+**安装包特性**（见 `electron-builder.yml` 的 `nsis` 段）：
+
+- 简体中文安装向导（LCID 2052），非一键安装，允许用户自定义安装目录；
+- 仅当前用户安装（`perMachine: false`），无需 UAC 提权；
+- 自动创建桌面与开始菜单快捷方式，名称为 **灵核工坊**；
+- 安装包与卸载程序图标均使用 `resources/icon.ico`。
+
+### 12.4 关键配置解读（electron-builder.yml）
 
 ```yaml
 appId: com.mihomo.client
-productName: Mihomo Client
-directories:
-  output: dist
+productName: Mihomo Desktop
+
 files:
-  - out/**
-extraResources:
-  - from: resources/sidecar
-    to: sidecar
+  - out/**                 # 仅打包 electron-vite 构建产物
+  - '!**/*.map'
+
+extraResources:            # 不打入 asar，直接复制到安装目录 resources/
+  - from: resources/sidecar/mihomo-service.exe
+    to: sidecar/mihomo-service.exe
+  - from: resources/icon.png
+    to: icon.png
+
 win:
-  target: nsis
-  icon: build/icon.ico   # 需自备
+  icon: resources/icon.ico
+  signAndEditExecutable: false   # 跳过签名与 rcedit 自动改 exe 图标
+  target:
+    - target: nsis
+      arch: [x64]
 ```
 
-1. `package.json` 增加脚本：
+**为什么 `signAndEditExecutable: false`？**  
+electron-builder 默认会调用 `rcedit` 把图标注入 exe 并执行签名步骤，在某些 Windows 环境下  
+`winCodeSign` 解压符号链接会报权限错误。关闭后 exe 图标需**手动用 rcedit 注入**（见 12.5），  
+否则 exe 文件本身显示默认 Electron 图标——但**托盘图标与窗口图标不受影响**（运行时从 `icon.png` 加载）。
 
-```json
-"scripts": {
-  "dist": "electron-vite build && electron-builder --win"
-}
+**为什么 sidecar 和 icon.png 要放 `extraResources`？**  
+打包后 `app.getAppPath()` 指向 `app.asar`（只读压缩包），而 `src/main/sidecar.ts` 与  
+`src/main/tray.ts` 需要在运行时读取可执行文件与图标。`extraResources` 会把这些文件释放到  
+安装目录的 `resources/` 下（asar 之外），主进程通过 `process.resourcesPath` 访问：
+
+- sidecar：`process.resourcesPath/sidecar/mihomo-service.exe`
+- 托盘图标：`process.resourcesPath/icon.png`
+
+### 12.5 注入 exe 图标（可选）
+
+若希望 `Mihomo Desktop.exe` 文件本身显示自定义图标（而非默认 Electron 图标），  
+打包完成后用 `rcedit` 手动注入：
+
+```powershell
+# 下载 rcedit-x64.exe（electron-builder 会缓存，也可从 https://github.com/electron/rcedit/releases 获取）
+.\rcedit-x64.exe "dist2\win-unpacked\Mihomo Desktop.exe" `
+  --set-icon "resources\icon.ico"
+
+# 同时注入安装包 exe（可选）
+.\rcedit-x64.exe "dist2\Mihomo Desktop Setup 2.4.8.exe" `
+  --set-icon "resources\icon.ico"
 ```
 
-> ⚠️ 打包后 `app.getAppPath()` 指向 `app.asar`，而 `src/main/sidecar.ts` 读取的是  
-> `<appPath>/resources/sidecar/mihomo-service.exe`。正式打包时必须通过 `extraResources`  
-> 把 sidecar 释放到 `resources/sidecar/`，同时给 `files` 加上 asar 解包规则，否则依旧拉不起后端。
+> 本仓库未内置 rcedit，如需注入请自行下载。不注入不影响应用功能与托盘显示。
+
+### 12.6 验证打包产物
+
+1. **直接运行绿色版**（无需安装）：
+
+   ```powershell
+   .\dist2\win-unpacked\Mihomo Desktop.exe
+   ```
+
+   预期：窗口弹出 → 托盘出现「灵核工坊」图标 → 控制面自动启动 → 首页数据正常。
+
+2. **检查控制面与内核**：
+
+   ```powershell
+   Invoke-RestMethod http://127.0.0.1:38888/api/health      # {"status":"ok"}
+   Invoke-RestMethod http://127.0.0.1:38888/api/core/status  # running: true
+   ```
+
+3. **测试托盘行为**：
+   - 点击窗口关闭按钮 → 窗口隐藏到托盘（不退出）；
+   - 左键托盘图标 → 窗口恢复并聚焦；
+   - 右键托盘图标 → 弹出「显示窗口 / 退出程序」菜单；
+   - 选择「退出程序」→ 应用完全退出，托盘图标消失无残留。
+
+4. **安装包测试**：双击 `Mihomo Desktop Setup 2.4.8.exe`，按向导安装到任意目录，  
+   从桌面快捷方式「灵核工坊」启动，确认功能与绿色版一致。
 
 ---
 
@@ -686,10 +813,8 @@ Mihomo 内核属敏感网络工具，易被误报。把数据目录加入杀软�
 4. **内核路径 / 下载目录设置不生效**：控制面固定使用 `%APPDATA%\mihomo-client`，只能用 `-home` 参数覆盖。
 5. **订阅尚未合并进内核配置**：`Refresh` 只拉取内容、统计节点数并更新状态，  
    不会把节点写入 `config.yaml`，因此订阅节点不会出现在「代理」页。
-6. **未配置打包**，无法生成安装包（见 [第 12 节](#12-打包发布尚未配置)）。
-7. **无系统托盘**，关闭窗口即退出应用。
-8. **控制面无鉴权**：任何本机程序都能调用 `127.0.0.1:38888` 的接口（含开关系统代理）。仅监听回环地址，风险可控，但多用户机器上需注意。
-9. **内核下载与订阅拉取不经过代理**，在网络受限环境下可能失败。
+6. **控制面无鉴权**：任何本机程序都能调用 `127.0.0.1:38888` 的接口（含开关系统代理）。仅监听回环地址，风险可控，但多用户机器上需注意。
+7. **内核下载与订阅拉取不经过代理**，在网络受限环境下可能失败。
 
 ---
 
