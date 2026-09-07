@@ -40,13 +40,29 @@ func NewServer(dataDir string) (*Server, error) {
 }
 
 // reconcile 将当前订阅节点合并进内核配置，并在内核运行时重启使其生效。
+// 先停核再写配置：Windows 下 mihomo 启动/运行期间可能短暂持有 config.yaml，
+// 直接写入会报 Access is denied，导致节点无法合并进配置。
 func (s *Server) reconcile() {
+	wasRunning := s.core.Status().Running
+	if wasRunning {
+		if err := s.core.Stop(); err != nil {
+			log.Printf("stop core before merge: %v", err)
+			return
+		}
+	}
+
 	if err := config.MergeProxies(s.core.ConfigPath(), s.subs.Proxies()); err != nil {
 		log.Printf("merge proxies: %v", err)
+		if wasRunning {
+			if err := s.core.Start(); err != nil {
+				log.Printf("restart core after failed merge: %v", err)
+			}
+		}
 		return
 	}
-	if s.core.Status().Running {
-		if err := s.core.Restart(); err != nil {
+
+	if wasRunning {
+		if err := s.core.Start(); err != nil {
 			log.Printf("restart core after merge: %v", err)
 		}
 	}

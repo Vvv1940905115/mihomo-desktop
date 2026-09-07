@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -88,10 +89,29 @@ func MergeProxies(path string, proxies []map[string]any) error {
 	if err != nil {
 		return err
 	}
+	return writeFileAtomic(path, out)
+}
+
+// writeFileAtomic 先写临时文件再 rename 替换，规避 Windows 下 mihomo
+// 启动/运行期间瞬时持有 config.yaml 导致的 Access is denied；失败时退避重试。
+func writeFileAtomic(path string, data []byte) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(path, out, 0o644)
+
+	tmp := path + ".tmp"
+	var lastErr error
+	for attempt := 0; attempt < 5; attempt++ {
+		if err := os.WriteFile(tmp, data, 0o644); err != nil {
+			lastErr = err
+		} else if err := os.Rename(tmp, path); err != nil {
+			lastErr = err
+		} else {
+			return nil
+		}
+		time.Sleep(time.Duration(attempt+1) * 200 * time.Millisecond)
+	}
+	return lastErr
 }
 
 // routeThroughProxy 将兜底规则 MATCH,DIRECT 替换为 MATCH,PROXY，

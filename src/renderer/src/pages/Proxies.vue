@@ -26,7 +26,7 @@ import {
 import CountryFlag from '@/components/CountryFlag.vue'
 import { usePolling } from '@/hooks/usePolling'
 import { getProxyRaw, type ProxyInfo } from '@/api/proxies'
-import { DELAY_GOOD_MS, DELAY_MEDIUM_MS, useProxiesStore } from '@/stores/proxies'
+import { DELAY_GOOD_MS, useProxiesStore } from '@/stores/proxies'
 import type { ProxyGroup } from '@/stores/proxies'
 import { parseProxyName } from '@/utils/flag'
 
@@ -90,9 +90,7 @@ function delayClass(node: string): string {
   const result = proxiesStore.delays[node]
   if (!result) return ''
   if (result.status !== 'ok') return 'text-red-500'
-  if (result.delay < DELAY_GOOD_MS) return 'text-green-500'
-  if (result.delay < DELAY_MEDIUM_MS) return 'text-yellow-500'
-  return 'text-red-500'
+  return result.delay < DELAY_GOOD_MS ? 'text-green-500' : 'text-red-500'
 }
 
 function renderIcon(icon: Component) {

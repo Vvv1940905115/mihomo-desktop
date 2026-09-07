@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { NTag } from 'naive-ui'
-import { useProxiesStore, DELAY_GOOD_MS, DELAY_MEDIUM_MS } from '@/stores/proxies'
+import { useProxiesStore, DELAY_GOOD_MS } from '@/stores/proxies'
 import type { ProxyGroup } from '@/stores/proxies'
 import CountryFlag from '@/components/CountryFlag.vue'
 import { parseProxyName } from '@/utils/flag'
@@ -28,9 +28,7 @@ function delayClass(node: string): string {
   const result = proxiesStore.delays[node]
   if (!result) return ''
   if (result.status !== 'ok') return 'text-red-500'
-  if (result.delay < DELAY_GOOD_MS) return 'text-green-500'
-  if (result.delay < DELAY_MEDIUM_MS) return 'text-yellow-500'
-  return 'text-red-500'
+  return result.delay < DELAY_GOOD_MS ? 'text-green-500' : 'text-red-500'
 }
 </script>
 

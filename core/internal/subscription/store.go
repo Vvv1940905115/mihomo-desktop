@@ -1,6 +1,7 @@
 package subscription
 
 import (
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -230,7 +231,31 @@ func (s *Store) UpdateAll() {
 }
 
 func fetch(url string) ([]byte, error) {
-	client := &http.Client{Timeout: 20 * time.Second}
+	// 禁用 HTTP/2 强制走 HTTP/1.1：订阅源（常见为 Cloudflare 域名）直连时，
+	// HTTP/2 多路复用易被网络干扰导致 body 读取超时（context deadline exceeded）。
+	// 单次请求超时放宽到 30s，配合下方 3 次重试应对时快时慢的直连抖动。
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+		Transport: &http.Transport{
+			TLSNextProto: make(map[string]func(string, *tls.Conn) http.RoundTripper),
+		},
+	}
+
+	var lastErr error
+	for attempt := 1; attempt <= 3; attempt++ {
+		data, err := doFetch(client, url)
+		if err == nil {
+			return data, nil
+		}
+		lastErr = err
+		if attempt < 3 {
+			time.Sleep(time.Duration(attempt) * time.Second)
+		}
+	}
+	return nil, lastErr
+}
+
+func doFetch(client *http.Client, url string) ([]byte, error) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err

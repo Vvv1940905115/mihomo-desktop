@@ -18,9 +18,8 @@ export interface DelayResult {
   status: DelayStatus
 }
 
-/** 延迟分级阈值（毫秒）：低于 good 绿色，低于 medium 黄色，其余红色 */
-export const DELAY_GOOD_MS = 200
-export const DELAY_MEDIUM_MS = 500
+/** 延迟可用阈值（毫秒）：低于该值绿色（可用），否则红色（不可用） */
+export const DELAY_GOOD_MS = 250
 
 export const useProxiesStore = defineStore('proxies', () => {
   const proxies = ref<Record<string, ProxyInfo>>({})

@@ -36,8 +36,16 @@ export function startSidecar(): void {
 }
 
 export function stopSidecar(): void {
-  if (sidecarProcess) {
-    sidecarProcess.kill()
-    sidecarProcess = null
+  if (!sidecarProcess) return
+  const child = sidecarProcess
+  sidecarProcess = null
+  const pid = child.pid
+
+  // Windows 下仅 kill sidecar 无法终止其 spawn 的 mihomo 子进程，mihomo 会变
+  // 孤儿进程继续占用 7897/9090 端口，导致下次启动提示"核心操作失败"。
+  // 用 taskkill /T /F 杀整个进程树，确保 mihomo 一起结束；child.kill() 兜底。
+  if (pid) {
+    spawn('taskkill', ['/pid', String(pid), '/T', '/F'], { windowsHide: true })
   }
+  child.kill()
 }
